@@ -3,6 +3,11 @@ import idautils
 import idc
 import operator
 
+if idaapi.IDA_SDK_VERSION >= 690:
+    from PyQt5.Qt import QApplication
+else:
+    from PySide.QtGui import QApplication
+
 
 class Kp_Menu_Context(idaapi.action_handler_t):
     def __init__(self):
@@ -59,29 +64,15 @@ class IDAXMMCpy_Plugin_t(idaapi.plugin_t):
     comment = "XMMCpy plugin for IDA Pro"
     help = "todo"
     wanted_name = "XMMCpy"
-    wanted_hotkey = "Ctrl-Alt-E"
+    wanted_hotkey = "Ctrl-Shift-E"
     flags = idaapi.PLUGIN_KEEP
 
     def init(self):
-        global p_initialized
-
+        
         try:
             Exporter.register(self, "XMMCpy")
         except:
             pass
-
-        if p_initialized is False:
-            p_initialized = True
-            idaapi.register_action(idaapi.action_desc_t(
-                "XMMCpy",
-                "Export XMMWORDs to C++",
-                self.export_xmm,
-                None,
-                None,
-                0
-            ))
-            idaapi.attach_action_to_menu(
-                "Edit/XMMCpy", "XMMCpy", idaapi.SETMENU_APP)
 
         return idaapi.PLUGIN_KEEP
 
@@ -91,8 +82,18 @@ class IDAXMMCpy_Plugin_t(idaapi.plugin_t):
     def run(self, arg):
         self.export_xmm()
 
+    def export_xmm_float(self):
+        result_float = "_mm_set_ps(%f, %f, %f, %f)" % (idc.GetFloat(get_screen_ea() + 12),
+                                                            idc.GetFloat(get_screen_ea() + 8), idc.GetFloat(get_screen_ea() + 4), idc.GetFloat(get_screen_ea()))
+        print("XMMCpy Result: %s" % result_float)
+        QApplication.clipboard().setText(result_float)
+
     def export_xmm(self):
-        print("%x" % get_screen_ea())
+        result = "_mm_set_epi32(0x%x, 0x%x, 0x%x, 0x%x)" % (idc.Dword(get_screen_ea() + 12),
+                                                            idc.Dword(get_screen_ea() + 8), idc.Dword(get_screen_ea() + 4), idc.Dword(get_screen_ea()))
+        
+        print("XMMCpy Result: %s" % result)
+        QApplication.clipboard().setText(result)
 
 
 def PLUGIN_ENTRY():
